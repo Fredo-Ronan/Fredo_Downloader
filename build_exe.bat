@@ -1,0 +1,1 @@
+pyinstaller --icon=assets/favicon.png --windowed .\main.py
