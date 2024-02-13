@@ -1,0 +1,1 @@
+flet build apk --product "Fredo Downloader" -vv

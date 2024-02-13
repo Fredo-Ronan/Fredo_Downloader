@@ -1,6 +1,6 @@
 import flet as ft
-from kivy.utils import platform
 
+from sys import platform
 import os
 import re
 import requests
@@ -86,9 +86,9 @@ def download_IG(short_code):
     custom_directory = 'Download'
 
     # Construct the target directory path
-    if platform == 'android':
+    if platform == 'linux':
         internal_storage_download_path = os.path.join('/storage/emulated/0', custom_directory)
-    elif platform == 'win':
+    elif platform == 'win32':
         home_dir = str(Path.home())
         download_dir = os.path.join(home_dir, 'Downloads')
 
@@ -96,13 +96,7 @@ def download_IG(short_code):
             internal_storage_download_path = download_dir
         else:
             raise Exception('Failed to find download folder')
-    elif platform == 'ios':
-        # ios platform dir implementation
-        pass
-    elif platform == 'linux':
-        # linux platform dir implementation
-        pass
-    elif platform == 'macosx':
+    elif platform == 'darwin':
         # mac os platform dir implementation
         pass
 
