@@ -1,5 +1,6 @@
 import flet as ft
 
+import time
 from sys import platform
 import os
 import re
@@ -11,7 +12,8 @@ from lib.instaloader2 import instaloader
 # GLOBAL VARIABLES ============================================================================================================
 txt_number = ft.TextField(hint_text='Enter instagram link here...', text_align=ft.TextAlign.LEFT)
 download_progress = ft.ProgressBar(width=400)
-progress_percent = ft.Text("0 %")
+progress_percent = ft.Text("Progress : 0 %")
+download_speed = ft.Text("Speed : 0 Kb/s")
 download_progress.value = 0
 download_loc_info = ""
 
@@ -21,16 +23,30 @@ def close_invalid_banner(e):
     invalid_link_banner.open = False
     invalid_link_banner.update()
 
+def close_internet_error_pop(e):
+    check_internet_pop.open = False
+    check_internet_pop.update()
+
+def loading_on():
+    circular_loading.opacity = 1
+    circular_loading.update()
+
+def loading_off():
+    circular_loading.opacity = 0
+    circular_loading.update()
+
 
 def clear_all_info(e):
     progress_percent.value = "0 %"
     download_progress.value = 0
+    download_speed.value = "Speed : 0 Kb/s"
     global download_loc_info
     txt_number.value = ""
 
     download_loc_info = ""
     
     txt_number.update()
+    download_speed.update()
     progress_percent.update()
     download_progress.update()
     success_pop.open = False
@@ -61,6 +77,19 @@ success_pop = ft.AlertDialog(
     on_dismiss=lambda e: print("Modal dialog dismissed!"),
 )
 
+check_internet_pop = ft.AlertDialog(
+    modal=True,
+    title=ft.Text("Error download!"),
+    content=ft.Text("Please check your internet connection and try again..."),
+    actions=[
+        ft.TextButton("Ok", on_click=close_internet_error_pop),
+    ],
+    actions_alignment=ft.MainAxisAlignment.END,
+    on_dismiss=lambda e: print("Modal dismissed!"),
+)
+
+circular_loading = ft.ProgressRing()
+circular_loading.opacity = 0
 
 # DOWNLOAD OPERATION ==============================================================================================================
 def parse_link(link):
@@ -77,59 +106,71 @@ def parse_link(link):
         return None
 
 def download_IG(short_code):
-    loader = instaloader.Instaloader()
-    post = instaloader.Post.from_shortcode(loader.context, short_code)
-    internal_storage_download_path = ""
-    global download_loc_info
+    try:
+        loading_on()
+        loader = instaloader.Instaloader()
+        post = instaloader.Post.from_shortcode(loader.context, short_code)
+        internal_storage_download_path = ""
+        global download_loc_info
 
-    # Set the custom directory name
-    custom_directory = 'Download'
+        # Set the custom directory name
+        custom_directory = 'Download'
 
-    # Construct the target directory path
-    if platform == 'linux':
-        internal_storage_download_path = os.path.join('/storage/emulated/0', custom_directory)
-    elif platform == 'win32':
-        home_dir = str(Path.home())
-        download_dir = os.path.join(home_dir, 'Downloads')
+        # Construct the target directory path
+        if platform == 'linux':
+            internal_storage_download_path = os.path.join('/storage/emulated/0', custom_directory)
+        elif platform == 'win32':
+            home_dir = str(Path.home())
+            download_dir = os.path.join(home_dir, 'Downloads')
 
-        if os.path.exists(download_dir):
-            internal_storage_download_path = download_dir
+            if os.path.exists(download_dir):
+                internal_storage_download_path = download_dir
+            else:
+                raise Exception('Failed to find download folder')
+        elif platform == 'darwin':
+            # mac os platform dir implementation
+            pass
+
+        # Create the custom directory if it doesn't exist
+        os.makedirs(internal_storage_download_path, exist_ok=True)
+
+        if post.is_video:
+            video_url = post.video_url
+            response = requests.get(video_url, stream=True)
+            total_size = int(response.headers.get('content-length', 0))
+            chunk_size = 1024
+            bytes_downloaded = 0
+            start_time = time.time()
+
+            # Set the download path in the custom directory
+            download_path = os.path.join(internal_storage_download_path, f"{post.owner_username}_{post.shortcode}.mp4")
+
+            loading_off()
+            with open(download_path, 'wb') as f:
+                for data in response.iter_content(chunk_size=chunk_size):
+                    f.write(data)
+                    bytes_downloaded += len(data)
+                    progress = (bytes_downloaded / total_size) * 1
+                    elapsed_time = time.time() - start_time
+                    speed = bytes_downloaded / elapsed_time / 1024
+
+                    download_speed.value = f"Speed : {round(speed)} Kb/s" if speed < 1000 else f"Speed : {(speed / 1000):.2f} Mb/s"
+                    download_progress.value = progress
+                    progress_percent.value = f"Progress : {round(progress * 100)} %"
+                    download_speed.update()
+                    download_progress.update()
+                    progress_percent.update()
+
+            download_loc_info = f"Video disimpan dalam direktori {download_path}"
+            popup_success()
         else:
-            raise Exception('Failed to find download folder')
-    elif platform == 'darwin':
-        # mac os platform dir implementation
-        pass
+            # Set the download path in the custom directory
+            download_path = os.path.join(internal_storage_download_path, f"{post.owner_username}_{post.shortcode}")
 
-    # Create the custom directory if it doesn't exist
-    os.makedirs(internal_storage_download_path, exist_ok=True)
-
-    if post.is_video:
-        video_url = post.video_url
-        response = requests.get(video_url, stream=True)
-        total_size = int(response.headers.get('content-length', 0))
-        chunk_size = 1024
-        bytes_downloaded = 0
-
-        # Set the download path in the custom directory
-        download_path = os.path.join(internal_storage_download_path, f"{post.owner_username}_{post.shortcode}.mp4")
-
-        with open(download_path, 'wb') as f:
-            for data in response.iter_content(chunk_size=chunk_size):
-                f.write(data)
-                bytes_downloaded += len(data)
-                progress = (bytes_downloaded / total_size) * 1
-                download_progress.value = progress
-                progress_percent.value = f"{round(progress * 100)} %"
-                download_progress.update()
-                progress_percent.update()
-
-        download_loc_info = f"Video disimpan dalam direktori {download_path}"
-        popup_success()
-    else:
-        # Set the download path in the custom directory
-        download_path = os.path.join(internal_storage_download_path, f"{post.owner_username}_{post.shortcode}")
-
-        loader.download_post(post, target=download_path)
+            loader.download_post(post, target=download_path)
+    except:
+        popup_internet_error()
+        loading_off()
 
 def download_instagram(e):
     parsed_code = parse_link(txt_number.value)
@@ -145,6 +186,10 @@ def popup_success():
     success_pop.content = ft.Text(download_loc_info)
     success_pop.update()
 
+def popup_internet_error():
+    check_internet_pop.open = True
+    check_internet_pop.update()
+
 def popup_err_link(input_value):
     invalid_link_banner.content = ft.Text(f"WARNING! {input_value} is not a valid instagram link. Please provide a valid instagram link.", color=ft.colors.BLACK)
     invalid_link_banner.open = True
@@ -156,6 +201,7 @@ InstaDownloader = ft.Container(
         [
             invalid_link_banner,
             success_pop,
+            check_internet_pop,
             ft.Divider(height=50, opacity=0),
             ft.Row(
                 [
@@ -182,7 +228,19 @@ InstaDownloader = ft.Container(
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
+            ft.Row(
+                [
+                    circular_loading,
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
             ft.Divider(height=20, opacity=0),
+            ft.Row(
+                [
+                    download_speed,
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
             ft.Row(
                 [
                     download_progress,
