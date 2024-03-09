@@ -11,8 +11,10 @@ Or you can download the app direcly using the supported OS platforms links below
 ## Fact about this project
 This project is actually a continuation of the development of the previous project, called Android-IG-Downloader, which here will be combined with other functionality, which is youtube downloader that can be use to download youtube video using only the link of the video.<br><br>
 
-You can go and learn the previous project here :
+You can go and learn the previous project here : <br>
 [![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=Fredo-Ronan&repo=Android-IG-Downloader-using-Python&theme=radical)](https://github.com/Fredo-Ronan/Android-IG-Downloader-using-Python)
+
+<br>
 
 ## Current Feature?
 - Download Instagram Reels using share link
