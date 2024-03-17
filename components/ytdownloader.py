@@ -2,24 +2,34 @@ import flet as ft
 
 from pytube import YouTube
 from pytube.cli import on_progress
+# from moviepy.editor import VideoFileClip, AudioFileClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.audio.io.AudioFileClip import AudioFileClip
 import time
 from sys import platform
 import os
-import re
-import requests
+import shutil
 from pathlib import Path
-
-from lib.instaloader2 import instaloader
 
 # GLOBAL VARIABLES ============================================================================================================
 txt_number = ft.TextField(hint_text='Enter youtube link here...', text_align=ft.TextAlign.LEFT)
 download_progress = ft.ProgressBar(width=400)
 progress_percent = ft.Text("Progress : 0 %")
 download_speed = ft.Text("Speed : 0 Kb/s")
-download_progress.value = 0
+download_progress.opacity = 0
 download_loc_info = ""
 start_download_time = None
 
+download_infos = ft.Markdown(
+    """
+    NOTE! That the progress and the speed shown on the screen is not in real time, it's update every certain time and it depends on the speed of your internet connection
+    """,
+    selectable=True,
+    extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+    code_theme="atom-one-dark",
+    code_style=ft.TextStyle(font_family="Roboto Mono"),
+    width=400
+)
 
 # UTILITIES FUNCTION ==========================================================================================================
 def close_invalid_banner(e):
@@ -38,6 +48,13 @@ def loading_off():
     circular_loading.opacity = 0
     circular_loading.update()
 
+def progress_bar_on():
+    download_progress.opacity = 1
+    download_progress.update()
+
+def progress_bar_off():
+    download_progress.opacity = 0
+    download_progress.update()
 
 def clear_all_info(e):
     progress_percent.value = "0 %"
@@ -45,6 +62,9 @@ def clear_all_info(e):
     download_speed.value = "Speed : 0 Kb/s"
     global download_loc_info
     txt_number.value = ""
+    download_infos.value = """
+    NOTE! That the progress and the speed shown on the screen is not in real time, it's update every certain time and it depends on the speed of your internet connection
+    """
 
     download_loc_info = ""
     
@@ -54,6 +74,7 @@ def clear_all_info(e):
     download_progress.update()
     success_pop.open = False
     success_pop.update()
+    download_infos.update()
 
 
 # POP UP AND BANNER CONSRTUCTION ==================================================================================================
@@ -72,7 +93,7 @@ invalid_link_banner = ft.Banner(
 
 success_pop = ft.AlertDialog(
     modal=True,
-    title=ft.Text("Download Completed!"),
+    title=ft.Text("Download Completed! ✅"),
     actions=[
         ft.TextButton("Ok", on_click=clear_all_info),
     ],
@@ -96,13 +117,14 @@ circular_loading.opacity = 0
 
 # DOWNLOAD OPERATION ==============================================================================================================
 def download_YT(link):
+    global infos
     try:
         loading_on()
         youtube = YouTube(url=link, on_progress_callback=on_progress)
         # get the highest resolution stream
-        video_stream = youtube.streams.get_highest_resolution()
+        video_stream = youtube.streams.filter(file_extension='mp4').order_by('resolution').desc().first()
+        audio_stream = youtube.streams.filter(only_audio=True).first()
         video_title = youtube.title + ".mp4"
-        internal_storage_download_path = ""
         global download_loc_info
 
         # Set the custom directory name
@@ -110,26 +132,123 @@ def download_YT(link):
 
         # Construct the target directory path
         if platform == 'linux':
-            internal_storage_download_path = os.path.join('/storage/emulated/0', custom_directory)
+            download_dir = os.path.join('/storage/emulated/0', custom_directory)
+            temp_dir = os.path.join(download_dir, "temp")
+            os.makedirs(temp_dir, exist_ok=True)
         elif platform == 'win32':
             home_dir = str(Path.home())
             download_dir = os.path.join(home_dir, 'Downloads')
 
             if os.path.exists(download_dir):
-                internal_storage_download_path = download_dir
+                temp_dir = os.path.join(download_dir, "temp")
+                os.makedirs(temp_dir, exist_ok=True)
             else:
                 raise Exception('Failed to find download folder')
         elif platform == 'darwin':
             # mac os platform dir implementation
             pass
 
-        # Create the custom directory if it doesn't exist
-        os.makedirs(internal_storage_download_path, exist_ok=True)
-
         loading_off()
-        video_stream.download(output_path=internal_storage_download_path, filename=video_title)
+        progress_bar_on()
 
-        download_loc_info = f"Video disimpan dalam direktori {internal_storage_download_path}"
+        audio_file_size = audio_stream.filesize / 1000000
+        video_file_size = video_stream.filesize / 1000000
+
+        # video_stream.download(output_path=internal_storage_download_path, filename=video_title)
+        download_infos.value = f"""
+    NOTE! That the progress and the speed shown on the screen is not in real time, it's update every certain time and it depends on the speed of your internet connection
+    -------------------------------------------------------------
+    Downloading Audio...
+    [Audio file size => {audio_file_size:.2f} Mb]
+        """
+        download_infos.update()
+
+        audio_file = audio_stream.download(output_path=temp_dir, filename='audio')
+
+        download_infos.value = f"""
+    NOTE! That the progress and the speed shown on the screen is not in real time, it's update every certain time and it depends on the speed of your internet connection
+    -------------------------------------------------------------
+    Audio Downloaded
+    [Audio file size => {audio_file_size:.2f} Mb] | done ✅
+    -------------------------------------------------------------
+    Downloading Video...
+    [Video file size => {video_file_size:.2f} Mb]
+        """
+        download_infos.update()
+
+        video_file = video_stream.download(output_path=temp_dir, filename='video')
+
+        # Create video clip objects
+        video_clip = VideoFileClip(video_file)
+        # Explicitly set the FPS for audio file
+        audio_clip = AudioFileClip(audio_file)
+
+        download_infos.value = f"""
+    NOTE! That the progress and the speed shown on the screen is not in real time, it's update every certain time and it depends on the speed of your internet connection
+    -------------------------------------------------------------
+    Audio Downloaded
+    [Audio file size => {audio_file_size:.2f} Mb] | done ✅
+    -------------------------------------------------------------
+    Video Downloaded
+    [Video file size => {video_file_size:.2f} Mb] | done ✅
+    -------------------------------------------------------------
+    Merging Audio and Video on progress....
+    
+    * this process will utilize much of raw CPU power, so don't worry if your laptop fan or CPU load is suddenly high, it only because of this process
+        """
+        download_infos.update()
+
+        # Combine audio and video
+        final_clip = video_clip.set_audio(audio_clip)
+
+        final_video_path = os.path.join(download_dir, f"{video_title}")
+
+        # Export the final clip
+        final_clip.write_videofile(final_video_path, codec='libx264', temp_audiofile=os.path.join(temp_dir, "temp_audio.mp3"))
+
+        # Cleanup
+        final_clip.close()
+        video_clip.close()
+        audio_clip.close()
+
+        download_infos.value = f"""
+    NOTE! That the progress and the speed shown on the screen is not in real time, it's update every certain time and it depends on the speed of your internet connection
+    -------------------------------------------------------------
+    Downloading Audio...
+    [Audio file size => {audio_file_size:.2f} Mb] | done ✅
+    -------------------------------------------------------------
+    Downloading Video...
+    [Video file size => {video_file_size:.2f} Mb] | done ✅
+    -------------------------------------------------------------
+    Merging Audio and Video | done ✅
+    -------------------------------------------------------------
+    Deleting temp folder....
+        """
+        download_infos.update()
+
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+            print("delete temp dir successfully")
+        
+        download_infos.value = f"""
+    NOTE! That the progress and the speed shown on the screen is not in real time, it's update every certain time and it depends on the speed of your internet connection
+    -------------------------------------------------------------
+    Downloading Audio...
+    [Audio file size => {audio_file_size:.2f} Mb] | done ✅
+    -------------------------------------------------------------
+    Downloading Video...
+    [Video file size => {video_file_size:.2f} Mb] | done ✅
+    -------------------------------------------------------------
+    Merging Audio and Video | done ✅
+    -------------------------------------------------------------
+    Deleting temp folder | done ✅
+    -------------------------------------------------------------
+    Success ✅
+        """
+        download_infos.update()
+
+        download_loc_info = f"Video disimpan dalam direktori {final_video_path}"
+        progress_bar_off()
         popup_success()
     except:
         popup_internet_error()
@@ -158,11 +277,11 @@ def on_progress(stream, chunk, bytes_remaining):
     print("UPDATE PROGRESS?")
 
     # Update UI elements
-    download_progress.value = int(download_percentage)
+    # download_progress.value = int(download_percentage)
     download_speed.value = download_speed_value
     progress_percent.value = f"Progress: {int(download_percentage)} %"
 
-    download_progress.update()
+    # download_progress.update()
     download_speed.update()
     progress_percent.update()
 
@@ -240,6 +359,12 @@ YtDownloader = ft.Container(
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
+            ft.Row(
+                [
+                    download_infos,
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+            )
         ],
     )
 )

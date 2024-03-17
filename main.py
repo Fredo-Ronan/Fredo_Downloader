@@ -24,6 +24,9 @@ def get_latest_version():
         return None
 
 def main(page: ft.Page):
+    page.window_height = 1000
+    page.window_width = 500
+    page.window_resizable = False
     def close_bottom_sheet_notif(e):
         new_version_bottom_sheet.open = False
         new_version_bottom_sheet.update()
