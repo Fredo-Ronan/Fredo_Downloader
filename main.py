@@ -4,6 +4,7 @@ import webbrowser
 
 from components.instadownloader import InstaDownloader
 from components.ytdownloader import YtDownloader
+from components.underdev import UnderDev
 from components.about import About_App
 
 from constants.constants import APP_VERSION
@@ -24,7 +25,7 @@ def get_latest_version():
         return None
 
 def main(page: ft.Page):
-    page.window_height = 1000
+    page.window_height = 900
     page.window_width = 500
     page.window_resizable = False
     def close_bottom_sheet_notif(e):
@@ -50,7 +51,7 @@ def main(page: ft.Page):
             ft.Tab(
                 text="Youtube",
                 icon=ft.icons.DOWNLOAD,
-                content=YtDownloader,
+                content=UnderDev,
             ),
             ft.Tab(
                 text="About",

@@ -93,7 +93,8 @@ circular_loading.opacity = 0
 
 # DOWNLOAD OPERATION ==============================================================================================================
 def parse_link(link):
-    clean_up_pattern = re.compile(r'https://www\.instagram\.com/([^/]+)/([^/?]+)/\?.*')
+    # Updated regex pattern to match the type and short code correctly
+    clean_up_pattern = re.compile(r'https://www\.instagram\.com/[^/]+/([^/]+)/([^/?]+)/?.*')
     match = re.search(clean_up_pattern, link)
 
     if match:

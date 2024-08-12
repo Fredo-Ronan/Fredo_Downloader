@@ -7,9 +7,14 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 import time
 from sys import platform
+import sys
 import os
 import shutil
 from pathlib import Path
+
+logging = open("log_fredo_downloader.txt", "wt")
+sys.stdout = logging
+sys.stderr = logging
 
 # GLOBAL VARIABLES ============================================================================================================
 txt_number = ft.TextField(hint_text='Enter youtube link here...', text_align=ft.TextAlign.LEFT)
@@ -104,7 +109,7 @@ success_pop = ft.AlertDialog(
 check_internet_pop = ft.AlertDialog(
     modal=True,
     title=ft.Text("Error download!"),
-    content=ft.Text("Please check your internet connection and try again..."),
+    content=ft.Text("Please check your internet connection and try again...\n\nPlease check the log_fredo_downloader.txt file on the program directory for further information about this error"),
     actions=[
         ft.TextButton("Ok", on_click=close_internet_error_pop),
     ],
@@ -179,7 +184,7 @@ def download_YT(link):
         video_file = video_stream.download(output_path=temp_dir, filename='video')
 
         # Create video clip objects
-        video_clip = VideoFileClip(video_file)
+        video_clip = VideoFileClip(video_file, verbose=False)
         # Explicitly set the FPS for audio file
         audio_clip = AudioFileClip(audio_file)
 
@@ -274,7 +279,6 @@ def on_progress(stream, chunk, bytes_remaining):
     download_percentage = (bytes_downloaded / total_size) * 100
     speed = stream.filesize / (time.time() - start_download_time) / 1024
     download_speed_value = f"Speed: {round(speed)} Kb/s" if speed < 1000 else f"Speed : {(speed / 1000):.2f} Mb/s"
-    print("UPDATE PROGRESS?")
 
     # Update UI elements
     # download_progress.value = int(download_percentage)
@@ -308,7 +312,7 @@ YtDownloader = ft.Container(
             invalid_link_banner,
             success_pop,
             check_internet_pop,
-            ft.Divider(height=50, opacity=0),
+            ft.Divider(height=5, opacity=0),
             ft.Row(
                 [
                     ft.Text("Fredo Youtube Downloader", size=20, text_align=ft.TextAlign.CENTER),
