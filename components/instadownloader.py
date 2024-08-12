@@ -65,6 +65,7 @@ invalid_link_banner = ft.Banner(
             on_click=close_invalid_banner
         ),
     ],
+    content=ft.Text('')
 )
 
 success_pop = ft.AlertDialog(
