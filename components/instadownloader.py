@@ -3,7 +3,7 @@ import flet as ft
 import time
 from sys import platform
 import os
-import re
+from urllib.parse import urlparse
 import requests
 from pathlib import Path
 
@@ -94,16 +94,18 @@ circular_loading.opacity = 0
 
 # DOWNLOAD OPERATION ==============================================================================================================
 def parse_link(link):
-    # Updated regex pattern to match the type and short code correctly
-    clean_up_pattern = re.compile(r'https://www\.instagram\.com/[^/]+/([^/]+)/([^/?]+)/?.*')
-    match = re.search(clean_up_pattern, link)
+    # Parse the URL
+    parsed_url = urlparse(link)
 
-    if match:
-        type = match.group(1)
-        short_code = match.group(2)
-        print(type)
-        print(short_code)
-        return {"type": type, "short_code": short_code}
+    # Extract the path from the parsed URL
+    path = parsed_url.path
+
+    # Find the position of 'reel/' and the position of '?'
+    start_index = path.find('reel/') + len('reel/')
+
+    # Extract the portion of the path between 'reel/' and '?'
+    if start_index != -1:
+        return path[start_index:len(path)-1]
     else:
         return None
 
@@ -178,7 +180,7 @@ def download_instagram(e):
     parsed_code = parse_link(txt_number.value)
 
     if parsed_code:
-        download_IG(parsed_code["short_code"])
+        download_IG(parsed_code)
     else:
         popup_err_link(txt_number.value)
 
