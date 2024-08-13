@@ -2,7 +2,7 @@
 
 A project of creating Instagram and Youtube downloader in one app using Python with flet framework<br><br>
 
-_Current Version : 1.0.0_ <br><br>
+_Current Version : 1.2.0_ <br><br>
 
 You can go to the release page [here](https://github.com/Fredo-Ronan/Fredo_Downloader/releases/latest) <br><br>
 Or you can download the app direcly using the supported OS platforms links below :
