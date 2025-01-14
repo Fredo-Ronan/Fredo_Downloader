@@ -18,6 +18,7 @@ def get_latest_version():
         response.raise_for_status()
         release_info = response.json()
         latest_version = release_info['tag_name']
+        print(f"Current = {APP_VERSION}, Upstream = {latest_version}")
         return latest_version
     except Exception as e:
         print(f"Error fetching latest version: {e}")

@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import requests
 from pathlib import Path
 
-from lib.instaloader2 import instaloader
+from lib.instaloader3 import instaloader
 
 # GLOBAL VARIABLES ============================================================================================================
 txt_number = ft.TextField(hint_text='Enter instagram link here...', text_align=ft.TextAlign.LEFT)
@@ -111,9 +111,12 @@ def parse_link(link):
 
 def download_IG(short_code):
     try:
+        # print(short_code)
         loading_on()
         loader = instaloader.Instaloader()
+        # print("HAAA?")
         post = instaloader.Post.from_shortcode(loader.context, short_code)
+        # print("SAMPE SINI?")
         internal_storage_download_path = ""
         global download_loc_info
 

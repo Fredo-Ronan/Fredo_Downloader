@@ -2,7 +2,7 @@
     This file contains some constant values for the app
 """
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.6.0"
 APP_NAME = "Fredo Downloader"
 DEVELOPER = "Fredo Ronan"
 WEB_PORTO = "https://fredo-ronan.github.io/"
