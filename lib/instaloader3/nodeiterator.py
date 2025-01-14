@@ -4,7 +4,7 @@ import json
 import os
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from lzma import LZMAError
+# from lzma import LZMAError
 from typing import Any, Callable, Dict, Iterable, Iterator, NamedTuple, Optional, Tuple, TypeVar
 
 from .exceptions import AbortDownloadException, InvalidArgumentException
@@ -314,7 +314,7 @@ def resumable_iteration(context: InstaloaderContext,
             is_resuming = True
             start_index = iterator.total_index
             context.log("Resuming from {}.".format(resume_file_path))
-        except (InvalidArgumentException, LZMAError, json.decoder.JSONDecodeError, EOFError) as exc:
+        except (InvalidArgumentException, json.decoder.JSONDecodeError, EOFError) as exc:
             context.error("Warning: Not resuming from {}: {}".format(resume_file_path, exc))
     try:
         yield is_resuming, start_index
