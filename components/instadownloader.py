@@ -44,7 +44,7 @@ def clear_all_info(e):
     txt_number.value = ""
 
     download_loc_info = ""
-    
+
     txt_number.update()
     download_speed.update()
     progress_percent.update()
@@ -61,7 +61,7 @@ invalid_link_banner = ft.Banner(
         ft.TextButton(
             content=ft.Container(
                 content=ft.Text("OK", color=ft.colors.BLACK, weight=ft.FontWeight.BOLD)
-            ), 
+            ),
             on_click=close_invalid_banner
         ),
     ],
@@ -94,8 +94,24 @@ circular_loading.opacity = 0
 
 # DOWNLOAD OPERATION ==============================================================================================================
 def parse_link(link):
+    loading_on()
+    valid_link = link
+
+    # Handle new instagram share link structure variations
+    if valid_link.find("share") != -1:
+        res = requests.get(link, allow_redirects=False)
+        print(res.status_code, res.headers['Location'])
+        res2 = requests.get(res.headers["Location"], allow_redirects=False) if res.status_code == 301 else None
+        print(res2.status_code, res2.headers["Location"])
+
+        valid_link = res2.headers["Location"] if res2.status_code == 302 else None
+
+    # handle if the request for actual link to the instagram reels is fail then return None to show error message to user
+    if valid_link == None:
+        return None
+
     # Parse the URL
-    parsed_url = urlparse(link)
+    parsed_url = urlparse(valid_link)
 
     # Extract the path from the parsed URL
     path = parsed_url.path
@@ -112,7 +128,6 @@ def parse_link(link):
 def download_IG(short_code):
     try:
         # print(short_code)
-        loading_on()
         loader = instaloader.Instaloader()
         # print("HAAA?")
         post = instaloader.Post.from_shortcode(loader.context, short_code)
@@ -229,7 +244,7 @@ InstaDownloader = ft.Container(
                     ft.ElevatedButton(content=ft.Container(
                             content=ft.Text(value='Download', size=20, weight=ft.FontWeight.BOLD),
                             padding=ft.padding.all(10),
-                        ), 
+                        ),
                         on_click=download_instagram
                     ),
                 ],

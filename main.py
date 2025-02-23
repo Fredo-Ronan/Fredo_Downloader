@@ -33,7 +33,7 @@ def main(page: ft.Page):
         new_version_bottom_sheet.update()
 
     def navigate_to_update(e):
-        webbrowser.open(LATEST_VER_LINK)
+        webbrowser.open(LATEST_VER_LINK, new=2)
 
     page.title = APP_NAME
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
